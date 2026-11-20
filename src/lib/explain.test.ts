@@ -142,6 +142,20 @@ describe('explainAvailability failure modes', () => {
     ).rejects.toThrow();
   });
 
+  it('rejects an oversized 10,000-character reason string', async () => {
+    const oversizedReason = 'x'.repeat(10000);
+    const oversized: ExplainInput = {
+      roomId: 'A101',
+      start: 660,
+      end: 720,
+      available: false,
+      reasons: [oversizedReason],
+    };
+    await expect(
+      explainAvailability(oversized, { fault: null }),
+    ).rejects.toThrow();
+  });
+
   it('exposes a sensible timeout constant', () => {
     expect(EXPLAIN_TIMEOUT_MS).toBeGreaterThan(0);
   });
