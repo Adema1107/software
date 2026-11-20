@@ -25,7 +25,7 @@ export function ExplanationPanel({ input, disabled }: Props) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), EXPLAIN_TIMEOUT_MS + 250);
     try {
-      const out = await explainAvailability(input, { fault: null, signal: controller.signal });
+      const out = await explainAvailability(input, { fault: 'timeout', signal: controller.signal });
       setState({ kind: 'ok', text: out.explanation });
     } catch {
       setState({ kind: 'error' });
