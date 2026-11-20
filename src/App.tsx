@@ -8,6 +8,7 @@ import { RoomSelector } from '@/components/RoomSelector';
 import { TimeInputs } from '@/components/TimeInputs';
 import { Timeline } from '@/components/Timeline';
 import { ResultBanner } from '@/components/ResultBanner';
+import { ExplanationPanel } from '@/components/ExplanationPanel';
 
 // Simulated "current campus time" — fixed at 10:00 for the prototype
 const CURRENT_TIME_MIN = 600;
@@ -85,6 +86,20 @@ function App() {
           reasons={result?.reasons ?? []}
           hasChecked={result !== null}
         />
+
+        {/* Optional explanation */}
+        {result !== null && startMin !== null && endMin !== null && (
+          <ExplanationPanel
+            disabled={false}
+            input={{
+              roomId: room.id,
+              start: startMin,
+              end: endMin,
+              available: result.available,
+              reasons: result.reasons,
+            }}
+          />
+        )}
 
         {/* Timeline */}
         <Timeline
