@@ -28,7 +28,7 @@ export function isValidExplainInput(input: unknown): input is ExplainInput {
     Number.isFinite(obj.end) &&
     typeof obj.available === 'boolean' &&
     Array.isArray(obj.reasons) &&
-    obj.reasons.every((r) => typeof r === 'string')
+    obj.reasons.every((r) => typeof r === 'string' && r.length <= 500)
   );
 }
 
