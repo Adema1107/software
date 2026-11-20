@@ -54,7 +54,10 @@ function App() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
             1. Choose a room
           </h2>
-          <RoomSelector rooms={rooms} selectedId={selectedRoomId} onSelect={setSelectedRoomId} />
+          <RoomSelector rooms={rooms} selectedId={selectedRoomId}onSelect={(id) => {
+  setSelectedRoomId(id);
+  setResult(null);
+}} />
         </section>
 
         {/* Step 2: Time inputs */}
@@ -66,8 +69,14 @@ function App() {
             startTime={startTime}
             endTime={endTime}
             currentTimeLabel={minutesToHHMM(CURRENT_TIME_MIN)}
-            onChangeStart={setStartTime}
-            onChangeEnd={setEndTime}
+            onChangeStart={(value) => {
+  setStartTime(value);
+  setResult(null);
+}}
+            onChangeEnd={(value) => {
+  setEndTime(value);
+  setResult(null);
+}}
           />
         </section>
 
