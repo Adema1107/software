@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { CalendarCheck, Search } from 'lucide-react';
 import { rooms } from '@/lib/data';
-import { checkAvailability } from '@/lib/availability';
+import { checkSlot, validateInput } from '@/lib/slotCheck';
 import { hhmmToMinutes, minutesToHHMM } from '@/lib/time';
-import type { CheckResult } from '@/lib/availability';
+import type { SlotCheckResult } from '@/lib/slotCheck';
 import { RoomSelector } from '@/components/RoomSelector';
 import { TimeInputs } from '@/components/TimeInputs';
 import { Timeline } from '@/components/Timeline';
-import { ResultBanner } from '@/components/ResultBanner';
+import { SlotResultBanner } from '@/components/SlotResultBanner';
 import { ExplanationPanel } from '@/components/ExplanationPanel';
 
 // Simulated "current campus time" — fixed at 10:00 for the prototype
@@ -16,19 +16,30 @@ const CURRENT_TIME_MIN = 600;
 function App() {
   const [selectedRoomId, setSelectedRoomId] = useState(rooms[0].id);
   const [startTime, setStartTime] = useState('11:00');
-  const [endTime, setEndTime] = useState('12:00');
-  const [result, setResult] = useState<CheckResult | null>(null);
+  const [durationMin, setDurationMin] = useState('60');
+  const [blocked, setBlocked] = useState(rooms[0].blocked);
+  const [result, setResult] = useState<SlotCheckResult | null>(null);
 
   const room = rooms.find((r) => r.id === selectedRoomId)!;
-  const startMin = hhmmToMinutes(startTime);
-  const endMin = hhmmToMinutes(endTime);
+
+  const handleRoomChange = (id: string) => {
+    setSelectedRoomId(id);
+    setBlocked(rooms.find((r) => r.id === id)!.blocked);
+  };
 
   const handleCheck = () => {
-    if (startMin === null || endMin === null) {
-      setResult({ available: false, reasons: ['Please enter valid times in HH:MM format.'] });
+    const startMin = hhmmToMinutes(startTime);
+    const duration = Number(durationMin);
+    const invalid = validateInput(startTime, duration, CURRENT_TIME_MIN);
+    if (startMin === null || invalid === 'INVALID_INPUT') {
+      setResult({
+        available: false,
+        reasonCode: 'INVALID_INPUT',
+        message: 'Invalid time format. Use HH:MM.',
+      });
       return;
     }
-    setResult(checkAvailability(room, startMin, endMin, CURRENT_TIME_MIN));
+    setResult(checkSlot({ start: startMin, durationMin: duration, blocked }, room.bookings, CURRENT_TIME_MIN));
   };
 
   return (
@@ -54,29 +65,22 @@ function App() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
             1. Choose a room
           </h2>
-          <RoomSelector rooms={rooms} selectedId={selectedRoomId}onSelect={(id) => {
-  setSelectedRoomId(id);
-  setResult(null);
-}} />
+          <RoomSelector rooms={rooms} selectedId={selectedRoomId} onSelect={handleRoomChange} />
         </section>
 
         {/* Step 2: Time inputs */}
         <section className="rounded-xl border border-slate-200 bg-white p-5">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-400">
-            2. Pick a time
+            2. Pick a start time and duration
           </h2>
           <TimeInputs
             startTime={startTime}
-            endTime={endTime}
+            durationMin={durationMin}
+            blocked={blocked}
             currentTimeLabel={minutesToHHMM(CURRENT_TIME_MIN)}
-            onChangeStart={(value) => {
-  setStartTime(value);
-  setResult(null);
-}}
-            onChangeEnd={(value) => {
-  setEndTime(value);
-  setResult(null);
-}}
+            onChangeStart={setStartTime}
+            onChangeDuration={setDurationMin}
+            onChangeBlocked={setBlocked}
           />
         </section>
 
@@ -90,22 +94,18 @@ function App() {
         </button>
 
         {/* Result */}
-        <ResultBanner
-          available={result?.available ?? false}
-          reasons={result?.reasons ?? []}
-          hasChecked={result !== null}
-        />
+        <SlotResultBanner result={result} />
 
         {/* Optional explanation */}
-        {result !== null && startMin !== null && endMin !== null && (
+        {result !== null && (
           <ExplanationPanel
             disabled={false}
             input={{
               roomId: room.id,
-              start: startMin,
-              end: endMin,
+              start: hhmmToMinutes(startTime) ?? 0,
+              end: (hhmmToMinutes(startTime) ?? 0) + Number(durationMin),
               available: result.available,
-              reasons: result.reasons,
+              reasons: [result.message],
             }}
           />
         )}
@@ -113,8 +113,8 @@ function App() {
         {/* Timeline */}
         <Timeline
           room={room}
-          candidateStart={startMin}
-          candidateEnd={endMin}
+          candidateStart={hhmmToMinutes(startTime)}
+          candidateEnd={(hhmmToMinutes(startTime) ?? 0) + Number(durationMin)}
         />
 
         {/* Footer note */}
